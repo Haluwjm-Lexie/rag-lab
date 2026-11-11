@@ -1,14 +1,20 @@
+
 {
   "version": 2,
   "functions": {
     "api/index.mjs": {
-      
       "maxDuration": 60,
-      "includeFiles": ["public/**", "lib/**", "vendor/**"]
+      "includeFiles": "{public,lib,vendor}/**"
     }
   },
   "routes": [
-    { "src": "/api(?:/.*)?", "dest": "/api/index.mjs" },
-    { "src": "/(.*)", "dest": "/api/index.mjs" }
+    {
+      "src": "/api(?:/.*)?",
+      "dest": "/api/index.mjs"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.mjs"
+    }
   ]
 }
