@@ -1,0 +1,1 @@
+Bundled PDF parser: pypdf 6.10.0 (BSD-3-Clause). Source from the installed Codex primary runtime package. Copyright and license in pypdf-LICENSE.txt. No modification to upstream package files. Python 3.9+ required.

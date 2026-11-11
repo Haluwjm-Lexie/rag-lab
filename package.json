@@ -1,0 +1,14 @@
+{
+  "name": "lexie-rag-lab",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test test/*.test.mjs",
+    "dev": "node server.mjs --preview"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

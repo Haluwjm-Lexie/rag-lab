@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {clean, chunkDocuments, retrieve, evaluateEvidence, contextFor, normalizeConfig} from '../lib/core.mjs';
+const docs=[{id:'a',title:'保险A',product:'A',year:'2026',text:'# 等待期\n疾病住院等待期为三十日。意外伤害住院无等待期。\n\n# 除外责任\n投保前已经确诊的疾病不在保障范围。'},{id:'b',title:'旧版保险B',product:'B',year:'2025',text:'# 等待期\n疾病住院等待期为九十日。'}];
+test('clean removes duplicate lines but preserves paragraph boundaries',()=>assert.equal(clean('标题\r\n\r\n内容\n内容'),'标题\n\n内容'));
+test('chunks preserve evidence and source metadata',()=>{let c=chunkDocuments(docs,{chunkSize:80,overlap:10,strategy:'structure'});assert(c.some(x=>x.text.includes('三十日')));assert(c.every(x=>x.docId&&Number.isInteger(x.start)&&Number.isInteger(x.end)));assert(c.every(x=>docs.find(d=>d.id===x.docId).text.slice(x.start,x.end)===x.text));});
+test('invalid overlap and oversized K rejected',()=>{assert.throws(()=>normalizeConfig({chunkSize:80,overlap:80}));assert.throws(()=>normalizeConfig({topK:51}));});
+test('hard filter removes wrong product before ranking',()=>{const c=chunkDocuments(docs,{chunkSize:100});const r=retrieve(c,'疾病住院等待期',{method:'hybrid',product:'A',candidateK:10,topK:3});assert(r.selected.length);assert(r.candidates.every(x=>x.product==='A'));});
+test('unknown keyword query returns empty evidence',()=>assert.equal(retrieve(chunkDocuments(docs,{}),'火星卫星轨道',{method:'keyword'}).selected.length,0));
+test('empty corpus and question fail explicitly',()=>{assert.throws(()=>retrieve([],'问题',{}));assert.throws(()=>retrieve(chunkDocuments(docs,{}),' ',{}));});
+test('evidence recall is measured using labels, absent labels stay null',()=>{const c=chunkDocuments(docs,{}).filter(x=>x.docId==='a');let e=evaluateEvidence(c,[{docId:'a',quote:'疾病住院等待期为三十日。'},{docId:'b',quote:'疾病住院等待期为九十日。'}]);assert.equal(e.recall,0.5);assert.equal(evaluateEvidence(c,[]).recall,null);});
+test('context labels are stable and budget does not cut evidence mid-chunk',()=>{const c=chunkDocuments(docs,{});let r=contextFor(c,150);assert(r.text.includes('[1]'));assert(r.text.length<=150);assert(r.selected.length<c.length);});
+test('PDF page metadata uses actual marker rather than counting markers',()=>{const ds=[{id:'pdf',title:'PDF',text:'[第1页]\n# 第一节\n等待期说明。\n\n[第8页]\n# 第二节\n除外责任说明。'}];const chunks=chunkDocuments(ds,{chunkSize:80,strategy:'structure'});assert.equal(chunks.find(x=>x.section==='第一节').page,1);assert.equal(chunks.find(x=>x.section==='第二节').page,8);});
